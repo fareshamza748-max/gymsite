@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GymPro">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="manifest" href="manifest.json">
+<title>GymPro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;900&family=Barlow+Condensed:wght@500;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/main.css">
+<style>
+@keyframes confettiFly {
+  to { transform: translate(var(--tx), var(--ty)) rotate(720deg); opacity: 0; }
+}
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+@keyframes prToastIn {
+  from { transform: translateX(-50%) translateY(80px) scale(.9); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     ONBOARDING WIZARD
+══════════════════════════════════════════════ -->
+<div id="onboarding" class="onboard-wrap" style="display:none">
+  <div class="onboard-progress"><div class="onboard-progress-fill" id="ob-prog" style="width:0%"></div></div>
+  <div class="ob-steps-indicator" id="ob-dots">
+    <div class="ob-step-dot active" data-sdot="1"></div>
+    <div class="ob-step-dot" data-sdot="2"></div>
+    <div class="ob-step-dot" data-sdot="3"></div>
+    <div class="ob-step-dot" data-sdot="4"></div>
+    <div class="ob-step-dot" data-sdot="5"></div>
+  </div>
+  <div class="onboard-body">
+
+    <!-- Step 1: Welcome -->
+    <div class="onboard-step active" data-step="1">
+      <div class="ob-icon">💪</div>
+      <div class="ob-title">أهلاً في GymPro</div>
+      <div class="ob-sub">هنساعدك تنظّم تمرينك — جيم، تأهيل، كور، وكارديو — في مكان واحد. خليني أعرف عنك شوية.</div>
+      <div class="form-field"><label class="flabel">اسمك</label><input class="finput" id="ob-name" placeholder="اسمك هنا..."></div>
+      <div class="frow">
+        <div class="form-field"><label class="flabel">العمر</label><input class="finput" id="ob-age" type="number" placeholder="25" min="10" max="90"></div>
+        <div class="form-field"><label class="flabel">الهدف الرئيسي</label>
+          <select class="fselect" id="ob-goal">
+            <option value="muscle">بناء العضل</option>
+            <option value="fat_loss">إنقاص الوزن</option>
+            <option value="fitness">تحسين اللياقة</option>
+            <option value="rehab">تأهيل فقط</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="form-field"><label class="flabel">الوزن (كج)</label><input class="finput" id="ob-weight" type="number" placeholder="75" step="0.5"></div>
+        <div class="form-field"><label class="flabel">الطول (سم)</label><input class="finput" id="ob-height" type="number" placeholder="175"></div>
+      </div>
+    </div>
+
+    <!-- Step 2: Gym -->
+    <div class="onboard-step" data-step="2">
+      <div class="ob-icon">🏋️</div>
+      <div class="ob-title">الجيم</div>
+      <div class="ob-sub">بتروح الجيم؟ اختار السبليت وأيامك في الأسبوع.</div>
+      <div class="form-field">
+        <label class="flabel">هل بتروح الجيم؟</label>
+        <div style="display:flex;gap:10px;margin-top:6px">
+          <div class="goal-card sel" id="gym-yes" onclick="setGymEnabled(true)" style="flex:1;padding:12px">
+            <div class="goal-icon">✅</div><div class="goal-info"><div class="goal-name">نعم</div></div>
+          </div>
+          <div class="goal-card" id="gym-no" onclick="setGymEnabled(false)" style="flex:1;padding:12px">
+            <div class="goal-icon">🏠</div><div class="goal-info"><div class="goal-name">لأ / تمارين بيت</div></div>
+          </div>
+        </div>
+      </div>
+      <div id="gym-config">
+        <div class="form-field">
+          <label class="flabel">اختار السبليت</label>
+          <div id="split-list" style="margin-top:8px"></div>
+        </div>
+        <div class="form-field" id="gym-days-wrap" style="display:none">
+          <label class="flabel">أيام الجيم في الأسبوع</label>
+          <div style="margin-top:8px" id="gym-day-chips"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Rehab -->
+    <div class="onboard-step" data-step="3">
+      <div class="ob-icon">🩺</div>
+      <div class="ob-title">التأهيل</div>
+      <div class="ob-sub">اختار برنامج التأهيل المناسب لحالتك. ممكن تختار أكتر من واحد لاحقاً.</div>
+      <div id="rehab-list"></div>
+      <div id="rehab-days-wrap" style="display:none;margin-top:14px">
+        <label class="flabel">أيام التأهيل</label>
+        <div style="margin-top:8px" id="rehab-day-chips"></div>
+      </div>
+    </div>
+
+    <!-- Step 4: Core & Cardio -->
+    <div class="onboard-step" data-step="4">
+      <div class="ob-icon">⚡</div>
+      <div class="ob-title">Core وكارديو</div>
+      <div class="ob-sub">اختار برنامج Core ونوع الكارديو اللي هتعمله.</div>
+      <div class="form-field">
+        <label class="flabel">برنامج Core</label>
+        <div id="core-list" style="margin-top:8px"></div>
+        <div id="core-days-wrap" style="display:none;margin-top:10px">
+          <label class="flabel">أيام Core</label>
+          <div id="core-day-chips" style="margin-top:6px"></div>
+        </div>
+      </div>
+      <div class="form-field" style="margin-top:14px">
+        <label class="flabel">الكارديو (اختياري)</label>
+        <div id="cardio-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
+        <div id="cardio-days-wrap" style="display:none;margin-top:10px">
+          <label class="flabel">أيام الكارديو</label>
+          <div id="cardio-day-chips" style="margin-top:6px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5: Done -->
+    <div class="onboard-step" data-step="5">
+      <div class="ob-icon">🎯</div>
+      <div class="ob-title" id="ob-done-title">جاهز يا بطل!</div>
+      <div class="ob-sub" id="ob-done-sub">جدولك الأسبوعي جاهز. كل يوم هتلاقي تمارينك المناسبة مرتبة تلقائياً.</div>
+      <div id="ob-summary" style="margin-top:16px"></div>
+    </div>
+
+  </div>
+  <div class="ob-nav">
+    <button class="ob-btn-back" id="ob-back" onclick="obBack()" style="display:none">← رجوع</button>
+    <button class="ob-btn-next" id="ob-next" onclick="obNext()">التالي ←</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════════════ -->
+<div id="main-app" style="display:none;flex-direction:column;height:100dvh;overflow:hidden">
+<div class="pages">
+
+  <!-- ═══ TODAY ═══ -->
+  <div class="page active" id="p-today">
+    <div class="page-header">
+      <div class="row">
+        <div><div class="page-title" id="today-greeting">اليوم</div><div class="page-subtitle" id="today-date"></div></div>
+        <div style="display:flex;gap:8px">
+          <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()">☀️</button>
+          <button class="btn btn-sm" onclick="goPage('settings')" style="color:var(--text2)">⚙️</button>
+        </div>
+      </div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="snum" id="s-done" style="color:var(--acc)">0</div><div class="slbl">اليوم</div></div>
+      <div class="stat-box"><div class="snum" id="s-streak" style="color:var(--acc2)">0</div><div class="slbl">سلسلة 🔥</div></div>
+      <div class="stat-box"><div class="snum" id="s-weight" style="color:var(--acc3)">—</div><div class="slbl">الوزن كج</div></div>
+    </div>
+    <div class="section"><div class="stitle">الأسبوع</div></div>
+    <div class="week-strip" id="today-week"></div>
+    <div class="quick-actions" id="today-quick-actions"></div>
+    <div id="today-rest" style="display:none" class="alert alert-info" style="margin-top:4px">
+      😴 <strong>يوم راحة</strong> — لا يوجد تمارين مجدولة النهارده. استرخِ وخليك مستعد لبكرة!
+    </div>
+    <div id="today-sections"></div>
+  </div>
+
+  <!-- ═══ GYM ═══ -->
+  <div class="page" id="p-gym">
+    <div class="page-header">
+      <div class="row">
+        <div><div class="page-title">الجيم</div><div class="page-subtitle" id="gym-session-lbl">جلسة اليوم</div></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" onclick="openLogModal(null,null,true)">📊 الأوزان</button>
+        </div>
+      </div>
+    </div>
+    <div id="gym-no-session" style="display:none" class="empty">
+  <div class="no-session-icon">🏖️</div>
+  <p>مش يوم جيم النهارده<br><span style="color:var(--text3);font-size:12px">استرخِ أو شوف جلسات تانية أسفل</span></p>
+</div>
+<div id="gym-all-sessions" style="display:none;padding:0 0 8px"></div>
+    <div class="chips-row" id="gym-session-tabs" style="display:none"></div>
+    <div id="gym-ex-list"></div>
+  </div>
+
+  <!-- ═══ REHAB ═══ -->
+  <div class="page" id="p-rehab">
+    <div class="page-header">
+      <div class="row">
+        <div><div class="page-title">التأهيل</div><div class="page-subtitle" id="rehab-prog-name">اختار برنامج</div></div>
+        <button class="btn btn-sm btn-outline" onclick="goPage('settings')">تغيير</button>
+      </div>
+    </div>
+    <div id="rehab-content"></div>
+  </div>
+
+  <!-- ═══ CORE / CARDIO ═══ -->
+  <div class="page" id="p-core">
+    <div class="page-header"><div class="page-title">Core وكارديو</div><div class="page-subtitle">قوة وصحة</div></div>
+    <div id="core-content"></div>
+  </div>
+
+  <!-- ═══ REPORTS ═══ -->
+  <div class="page" id="p-reports">
+    <div class="page-header"><div class="page-title">تقاريري</div><div class="page-subtitle">تقدمك الحقيقي</div></div>
+    <div class="rep-card" style="margin-top:12px">
+      <div class="rep-title">آخر 7 أيام</div>
+      <div class="bar-chart" id="week-chart"></div>
+    </div>
+    <div class="rep-card">
+      <div class="rep-title">الوزن (آخر 30 يوم)</div>
+      <canvas id="weight-canvas" style="width:100%;height:110px;display:block"></canvas>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <input class="finput" id="w-input" type="number" step="0.1" placeholder="وزنك النهارده (كج)..." style="flex:1">
+        <button class="btn btn-acc" onclick="doLogW()">سجّل</button>
+      </div>
+    </div>
+    <div class="rep-card">
+      <div class="rep-title">السلسلة</div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <div class="streak-big" id="r-streak">0</div>
+        <div><div style="font-size:16px;font-weight:700">يوم متتالي 🔥</div><div style="font-size:12px;color:var(--text2);margin-top:4px" id="r-streak-sub">ابدأ النهارده!</div></div>
+      </div>
+    </div>
+    <div class="rep-card"><div class="rep-title">المجموعات العضلية (الأسبوع)</div><div id="muscle-chart"></div></div>
+    <div class="rep-card"><div class="rep-title">سجل الأداء</div><div id="perf-log"></div></div>
+
+    <div class="rep-card">
+      <div class="rep-title">🏆 الأرقام القياسية</div>
+      <div id="pr-history-list"></div>
+    </div>
+
+    <div class="rep-card">
+      <div class="rep-title">📅 سجل الحضور (28 يوم)</div>
+      <div id="streak-calendar"></div>
+    </div>
+
+    <div class="rep-card">
+      <div class="rep-title">⚡ الحجم الأسبوعي (طن)</div>
+      <div id="volume-chart"></div>
+    </div>
+
+    <div class="rep-card">
+      <div class="rep-title">📈 تتبع تمرين معين</div>
+      <div class="form-field" style="margin-bottom:10px">
+        <select class="fselect" id="prog-ex-picker" onchange="renderExProgression()">
+          <option value="">اختار تمرين...</option>
+        </select>
+      </div>
+      <canvas id="progression-canvas" style="width:100%;height:120px;display:block"></canvas>
+    </div>
+
+    <div class="rep-card">
+      <div class="rep-title">📊 الإحصائيات الكلية</div>
+      <div id="stats-overview"></div>
+    </div>
+  </div>
+
+  <!-- ═══ SETTINGS ═══ -->
+  <div class="page" id="p-settings">
+    <div class="page-header"><div class="page-title">الإعدادات</div><div class="page-subtitle">تعديل بياناتك وبرامجك</div></div>
+    <div style="padding:12px 16px 0">
+      <div class="stitle">الملف الشخصي</div>
+      <div class="card card-p" style="margin-bottom:12px">
+        <div class="frow" style="margin-bottom:10px">
+          <div class="form-field" style="margin:0"><label class="flabel">الاسم</label><input class="finput" id="s-name"></div>
+          <div class="form-field" style="margin:0"><label class="flabel">العمر</label><input class="finput" id="s-age" type="number"></div>
+        </div>
+        <div class="frow">
+          <div class="form-field" style="margin:0"><label class="flabel">الوزن (كج)</label><input class="finput" id="s-wt" type="number" step="0.5"></div>
+          <div class="form-field" style="margin:0"><label class="flabel">الطول (سم)</label><input class="finput" id="s-ht" type="number"></div>
+        </div>
+        <div style="margin-top:12px" id="s-bmi-wrap"></div>
+        <button class="btn btn-acc" style="margin-top:12px;width:100%;justify-content:center" onclick="saveProfile()">حفظ</button>
+      </div>
+
+      <div class="stitle">السبليت والجيم</div>
+      <div class="card card-p" style="margin-bottom:12px">
+        <div id="s-split-info"></div>
+        <button class="btn btn-ghost" style="margin-top:10px;width:100%;justify-content:center" onclick="reOnboard(2)">تغيير السبليت</button>
+      </div>
+
+      <div class="stitle">برنامج التأهيل</div>
+      <div class="card card-p" style="margin-bottom:12px">
+        <div id="s-rehab-info"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="reOnboard(3)">تغيير البرنامج</button>
+          <button class="btn btn-outline" style="flex:1;justify-content:center" onclick="doAdvancePhase()">المرحلة التالية ←</button>
+        </div>
+      </div>
+
+      <div class="stitle">Core وكارديو</div>
+      <div class="card card-p" style="margin-bottom:12px">
+        <div id="s-core-info"></div>
+        <button class="btn btn-ghost" style="margin-top:10px;width:100%;justify-content:center" onclick="reOnboard(4)">تغيير</button>
+      </div>
+
+      <div class="stitle">إعدادات أخرى</div>
+      <div class="card" style="margin-bottom:12px;overflow:hidden">
+        <div class="ex-row" onclick="toggleTheme()" style="cursor:pointer">
+          <div class="ex-info"><div class="ex-name">الثيم</div><div class="ex-meta" id="s-theme-lbl">وضع مظلم</div></div>
+          <button class="btn btn-sm" id="theme-btn2" onclick="event.stopPropagation();toggleTheme()">☀️</button>
+        </div>
+        <div class="ex-row" onclick="openNotifModal()" style="cursor:pointer">
+          <div class="ex-info"><div class="ex-name">🔔 الإشعارات والتذكيرات</div><div class="ex-meta" id="s-notif-lbl">اضغط للإعداد</div></div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div class="ex-row" onclick="exportData()" style="cursor:pointer">
+          <div class="ex-info"><div class="ex-name">📤 تصدير البيانات</div><div class="ex-meta">حفظ نسخة احتياطية JSON</div></div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </div>
+        <div class="ex-row" onclick="if(confirm('مسح كل البيانات؟')){resetAll();location.reload()}" style="cursor:pointer;border-bottom:none">
+          <div class="ex-info"><div class="ex-name" style="color:#e04444">مسح كل البيانات</div><div class="ex-meta">ابدأ من الصفر</div></div>
+        </div>
+      </div>
+
+      <div class="stitle">عن التطبيق</div>
+      <div class="card card-p" style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-size:36px">💪</div>
+          <div>
+            <div style="font-size:16px;font-weight:700">GymPro v4</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:3px">جيم · تأهيل · كور · كارديو</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">يعمل بالكامل بدون إنترنت 📡</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /pages -->
+
+<nav class="bottom-nav">
+  <button class="ni active" onclick="goPage('today',this)">
+    <div class="ni-icon"><svg viewBox="0 0 24 24"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg></div><span>اليوم</span>
+  </button>
+  <button class="ni" onclick="goPage('gym',this)" id="nav-gym">
+    <div class="ni-icon"><svg viewBox="0 0 24 24"><path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg></div><span>الجيم</span>
+  </button>
+  <button class="ni" onclick="goPage('rehab',this)">
+    <div class="ni-icon"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>التأهيل</span>
+  </button>
+  <button class="ni" onclick="goPage('core',this)">
+    <div class="ni-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div><span>Core</span>
+  </button>
+  <button class="ni" onclick="goPage('reports',this)">
+    <div class="ni-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><span>تقاريري</span>
+  </button>
+</nav>
+</div><!-- /main-app -->
+
+<!-- ══ LOG PERFORMANCE MODAL ══ -->
+<div class="overlay" id="log-overlay" onclick="if(event.target===this)closeOverlay('log-overlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="log-title">سجّل الأداء</div>
+    <div class="frow">
+      <div class="form-field"><label class="flabel">الوزن (كج)</label><input class="finput" id="log-wt" type="number" step="0.5" placeholder="0"></div>
+      <div class="form-field"><label class="flabel">التكرار</label><input class="finput" id="log-reps" type="number" placeholder="0"></div>
+    </div>
+    <div class="form-field"><label class="flabel">ملاحظة</label><input class="finput" id="log-note" placeholder="كيف كان التمرين..."></div>
+    <div id="log-hist"></div>
+    <div class="modal-btns">
+      <button class="mb-s" onclick="closeOverlay('log-overlay')">إلغاء</button>
+      <button class="mb-p" onclick="doSaveLog()">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════════════
+     SCRIPTS
+══════════════════════════════════════════════ -->
+<script src="js/data.js"></script>
+<script src="js/state-v3.js"></script>
+<script src="js/exercises-svg.js"></script>
+<script src="js/features.js"></script>
+<script>
+/* ════════════════════════════════
+   HELPERS
+════════════════════════════════ */
+let _toastT;
+function toast(msg,type='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.background=type==='err'?'#e04444':'var(--acc)'; t.style.color=type==='err'?'#fff':'var(--acc-t)';
+  t.classList.add('show'); clearTimeout(_toastT); _toastT=setTimeout(()=>t.classList.remove('show'),2400);
+}
+function openOverlay(id){ document.getElementById(id)?.classList.add('open'); }
+function closeOverlay(id){ document.getElementById(id)?.classList.remove('open'); }
+
+function getSvg(id){
+  if(typeof EXERCISE_SVGS==='undefined') return '';
+  return EXERCISE_SVGS[id]||EXERCISE_SVGS._fallback||'';
+}
+
+function mkCheckSvg(){ return `<svg viewBox="0 0 12 12" stroke="var(--acc-t)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 5,9 10,3"/></svg>`; }
+
+function mkExRow(exId, onclick, opts={}){
+  const ex = EX[exId]; if(!ex) return '';
+  const done = isDone(exId);
+  const last = getLastPerf(exId);
+  const isGym = ex.cat==='gym';
+  const quickLog = opts.quickLog && isGym;
+  const lastStr = last && last.wt ? `${last.wt}كج×${last.reps}` : '';
+  return `<div class="ex-row${done?' done':''}" id="exrow-${exId}" ${quickLog?'':`onclick="${onclick}('${exId}')"` }>
+    <div class="ex-chk${done?' done':''}" id="exchk-${exId}" onclick="${onclick}('${exId}')" style="cursor:pointer">${done?mkCheckSvg():''}</div>
+    <div class="ex-thumb" onclick="${onclick}('${exId}')" style="cursor:pointer">${getSvg(exId)}</div>
+    <div class="ex-info" onclick="${quickLog?'':`${onclick}('${exId}')`}" style="${quickLog?'':`cursor:pointer`}">
+      <div class="ex-name">${ex.priority?'⭐ ':''} ${ex.name}</div>
+      <div class="ex-meta">${ex.sets}${ex.muscle?' · '+ex.muscle:''}${lastStr?' · آخر: '+lastStr:''}</div>
+    </div>
+    ${quickLog?`
+    <button class="btn btn-xs" style="flex-shrink:0;color:var(--acc3);border-color:rgba(0,212,255,.25)" onclick="openLogModal('${exId}','${ex.name.replace(/'/g,"\\'")}')">📝</button>
+    `:''}
+  </div>`;
+}
+
+function mkExCard(exId, opts={}){
+  const ex = EX[exId]; if(!ex) return '';
+  const done = isDone(exId);
+  const last = getLastPerf(exId);
+  return `<div class="wcard${done?' done':''}" id="wcard-${exId}">
+    <div class="wcard-top">
+      <div class="wcard-img">${getSvg(exId)}</div>
+      <div class="wcard-info">
+        <div class="wcard-name">${ex.priority?'⭐ ':''} ${ex.name}</div>
+        <div class="wcard-meta">${ex.sets}${ex.muscle?' · '+ex.muscle:''}${opts.session?' · '+opts.session:''}</div>
+        <div class="wcard-note">${ex.note||''}${last?`<span style="color:var(--acc);font-weight:700"> · آخر: ${last.wt?last.wt+'كج ':''} ${last.reps?last.reps+' تكرار':''}</span>`:''}</div>
+      </div>
+    </div>
+    <div class="wcard-foot">
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-${ex.cat}">${{gym:'جيم',rehab:'تأهيل',core:'كور',cardio:'كارديو'}[ex.cat]||ex.cat}</span>
+        ${ex.muscle?`<span class="badge b-muscle">${ex.muscle}</span>`:''}
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm" onclick="openLogModal('${exId}','${ex.name.replace(/'/g,"\\'")}')">📝</button>
+        <button class="btn btn-sm${done?' btn-acc':''}" id="wcbtn-${exId}" onclick="doToggle('${exId}')">${done?'✓ تم':'سجّل'}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderWeekStrip(id){
+  const c=document.getElementById(id); if(!c) return;
+  const sn=WEEK_SHORT, now=new Date(); c.innerHTML='';
+  for(let i=6;i>=0;i--){
+    const d=new Date(now); d.setDate(d.getDate()-i);
+    const ds=d.toISOString().split('T')[0];
+    const h=S.history[ds]||{};
+    let cls='wd'+(i===0?' today':'');
+    if(h.total>0&&h.gym>0) cls+=' has-all';
+    else if(h.total>0) cls+=' has-rehab';
+    const el=document.createElement('div');
+    el.className=cls;
+    el.innerHTML=`<span class="wdn">${sn[d.getDay()]}</span><span class="wdd">${d.getDate()}</span>`;
+    c.appendChild(el);
+  }
+}
+
+function renderWeightCanvas(){
+  const canvas=document.getElementById('weight-canvas'); if(!canvas) return;
+  const logs=S.weightLog.slice(-30), ctx=canvas.getContext('2d');
+  const W=canvas.offsetWidth||340, H=110; canvas.width=W; canvas.height=H; ctx.clearRect(0,0,W,H);
+  if(logs.length<2){
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--text3').trim()||'#484848';
+    ctx.font='13px Cairo,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(logs.length===0?'سجّل وزنك للبدء':'سجّل أكثر من قراءة للرسم',W/2,H/2); return;
+  }
+  const vals=logs.map(l=>l.v), mn=Math.min(...vals)-.5, mx=Math.max(...vals)+.5;
+  const xS=i=>(i/(logs.length-1))*(W-24)+12, yS=v=>H-14-((v-mn)/(mx-mn))*(H-26);
+  const accColor=getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()||'#c8ff00';
+  const grad=ctx.createLinearGradient(0,0,0,H); grad.addColorStop(0,'rgba(200,255,0,.2)'); grad.addColorStop(1,'rgba(200,255,0,0)');
+  ctx.beginPath(); ctx.moveTo(xS(0),yS(logs[0].v));
+  logs.forEach((l,i)=>{if(i>0)ctx.lineTo(xS(i),yS(l.v));});
+  ctx.lineTo(xS(logs.length-1),H); ctx.lineTo(0,H); ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+  ctx.beginPath(); ctx.strokeStyle=accColor; ctx.lineWidth=2; ctx.lineJoin='round';
+  logs.forEach((l,i)=>{ i===0?ctx.moveTo(xS(i),yS(l.v)):ctx.lineTo(xS(i),yS(l.v)); });
+  ctx.stroke();
+  logs.forEach((l,i)=>{ ctx.beginPath(); ctx.arc(xS(i),yS(l.v),3,0,Math.PI*2); ctx.fillStyle=accColor; ctx.fill(); });
+  const last=logs[logs.length-1];
+  ctx.fillStyle=accColor; ctx.font='bold 11px Cairo,sans-serif'; ctx.textAlign='right';
+  ctx.fillText(last.v.toFixed(1)+' كج',xS(logs.length-1)+2,yS(last.v)-7);
+}
+
+/* ════════════════════════════════
+   PAGE NAVIGATION
+════════════════════════════════ */
+function goPage(name, btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
+  document.getElementById('p-'+name)?.classList.add('active');
+  btn?.classList.add('active');
+  const renders={today:renderToday,gym:renderGym,rehab:renderRehab,core:renderCore,reports:renderReports,settings:renderSettings};
+  // settings doesn't have a nav button, skip nav update for it
+  renders[name]?.();
+  // Scroll to top
+  document.getElementById('p-'+name)?.scrollTo(0,0);
+}
+
+/* ════════════════════════════════
+   TODAY PAGE
+════════════════════════════════ */
+function renderQuickActions(){
+  const qa=document.getElementById('today-quick-actions'); if(!qa) return;
+  const items=[];
+  if(S.gym.enabled && isGymDay()) items.push({icon:'🏋️',label:'الجيم',action:"goPage('gym')"});
+  if(S.rehab.programId && isRehabDay()) items.push({icon:'🩺',label:'تأهيل',action:"goPage('rehab')"});
+  if(S.core.programId && isCoreDay()) items.push({icon:'⚡',label:'كور',action:"goPage('core')"});
+  if(S.cardio.type && isCardioDay()) items.push({icon:'🏃',label:'كارديو',action:"goPage('core')"});
+  items.push({icon:'📊',label:'تقاريري',action:"goPage('reports')"});
+  items.push({icon:'⚙️',label:'إعدادات',action:"goPage('settings')"});
+  qa.innerHTML=items.map(i=>`<div class="quick-action" onclick="${i.action}"><div class="quick-action-icon">${i.icon}</div>${i.label}</div>`).join('');
+}
+
+function renderToday(){
+  updateStreak();
+  const now=new Date();
+  const DAYNAMES=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  const MONTHS=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const name=S.profile.name||'بطل';
+  document.getElementById('today-greeting').textContent=`أهلاً ${name}! 👋`;
+  document.getElementById('today-date').textContent=`${DAYNAMES[now.getDay()]}، ${now.getDate()} ${MONTHS[now.getMonth()]}`;
+  document.getElementById('s-done').textContent=totalTodayDone()+'/'+totalTodayAll();
+  document.getElementById('s-streak').textContent=S.streak||0;
+  const w=getLatestWeight(); document.getElementById('s-weight').textContent=w?w.toFixed(1):'—';
+  renderWeekStrip('today-week');
+
+  const gymExs=getTodayGymExs(), rehabExs=getTodayRehabExs(), coreExs=getTodayCoreExs();
+  const isRest= !gymExs.length && !rehabExs.length && !coreExs.length;
+  document.getElementById('today-rest').style.display=isRest?'block':'none';
+  renderQuickActions();
+
+  const sections=document.getElementById('today-sections'); sections.innerHTML='';
+  const session=getTodayGymSession();
+
+  if(gymExs.length){
+    const doneC=gymExs.filter(id=>isDone(id)).length;
+    const pct=Math.round(doneC/gymExs.length*100);
+    sections.innerHTML+=`
+      <div style="padding:0 16px;display:flex;align-items:center;justify-content:space-between;margin:10px 0 6px">
+        <div class="stitle" style="margin:0">🏋️ ${session?.label||'الجيم'}</div>
+        <div style="font-size:12px;color:var(--text2)">${doneC}/${gymExs.length}</div>
+      </div>
+      <div class="card" style="margin:0 16px 12px">
+        <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+        ${gymExs.map(id=>mkExRow(id,'doToggle',{quickLog:true})).join('')}
+      </div>`;
+  }
+
+  if(rehabExs.length){
+    const phase=getTodayRehabPhase();
+    const prog=REHAB_PROGRAMS[S.rehab.programId];
+    const morningIds=phase?.morning||[];
+    const eveningIds=phase?.evening||[];
+    const doneC=rehabExs.filter(id=>isDone(id)).length;
+    const pct=Math.round(doneC/rehabExs.length*100);
+    sections.innerHTML+=`
+      <div style="padding:0 16px;display:flex;align-items:center;justify-content:space-between;margin:10px 0 6px">
+        <div class="stitle" style="margin:0">🩺 ${prog?.nameAr||'التأهيل'} — المرحلة ${S.rehab.currentPhase}</div>
+        <div style="font-size:12px;color:var(--text2)">${doneC}/${rehabExs.length}</div>
+      </div>
+      <div class="card" style="margin:0 16px 12px">
+        <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:var(--acc3)"></div></div>
+        ${morningIds.length?`<div style="padding:8px 14px 2px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">🌅 الصباح</div>`:''}
+        ${morningIds.map(id=>mkExRow(id,'doToggle')).join('')}
+        ${eveningIds.length?`<div style="padding:8px 14px 2px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">🌙 المساء</div>`:''}
+        ${eveningIds.map(id=>mkExRow(id,'doToggle')).join('')}
+      </div>`;
+    if(phase?.note){
+      sections.innerHTML+=`<div class="alert alert-info" style="margin:0 16px 10px">💡 ${phase.note}</div>`;
+    }
+  }
+
+  if(coreExs.length){
+    const coreProg=CORE_PROGRAMS[S.core.programId];
+    const doneC=coreExs.filter(id=>isDone(id)).length;
+    const pct=Math.round(doneC/coreExs.length*100);
+    sections.innerHTML+=`
+      <div style="padding:0 16px;display:flex;align-items:center;justify-content:space-between;margin:10px 0 6px">
+        <div class="stitle" style="margin:0">⚡ ${coreProg?.name||'Core'}</div>
+        <div style="font-size:12px;color:var(--text2)">${doneC}/${coreExs.length}</div>
+      </div>
+      <div class="card" style="margin:0 16px 12px">
+        <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:var(--acc4)"></div></div>
+        ${coreExs.map(id=>mkExRow(id,'doToggle')).join('')}
+      </div>`;
+  }
+
+  if(isCardioDay()&&S.cardio.type){
+    const opt=CARDIO_OPTIONS.find(c=>c.id===S.cardio.type);
+    sections.innerHTML+=`
+      <div style="padding:0 16px;margin:10px 0 6px"><div class="stitle" style="margin:0">🏃 كارديو</div></div>
+      <div class="card card-p" style="margin:0 16px 12px;display:flex;align-items:center;gap:14px">
+        <div style="font-size:32px">${opt?.icon||'🏃'}</div>
+        <div><div style="font-size:15px;font-weight:700">${opt?.name||S.cardio.type}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:3px">${S.cardio.durationMin} دقيقة ${opt?.note?'· '+opt.note:''}</div></div>
+        <button class="btn btn-sm btn-acc" style="margin-right:auto" onclick="doToggle('cardio_${S.cardio.type}')">${isDone('cardio_'+S.cardio.type)?'✓ تم':'سجّل'}</button>
+      </div>`;
+  }
+}
+
+/* ════════════════════════════════
+   GYM PAGE
+════════════════════════════════ */
+function renderGym(){
+  const session=getTodayGymSession();
+  const noSess=document.getElementById('gym-no-session');
+  const tabs=document.getElementById('gym-session-tabs');
+  const list=document.getElementById('gym-ex-list');
+
+  const allSess=document.getElementById('gym-all-sessions');
+  if(!S.gym.enabled){
+    noSess.style.display='block'; tabs.style.display='none'; list.innerHTML=''; allSess.style.display='none';
+    document.getElementById('gym-session-lbl').textContent='الجيم غير مفعل';
+    return;
+  }
+  if(!session){
+    noSess.style.display='block'; tabs.style.display='flex'; allSess.style.display='none';
+    document.getElementById('gym-session-lbl').textContent='يوم راحة — اختار جلسة للمراجعة';
+  } else {
+    noSess.style.display='none'; allSess.style.display='none';
+  }
+  noSess.style.display='none'; tabs.style.display='flex';
+  document.getElementById('gym-session-lbl').textContent=session.label;
+
+  // Show all gym day sessions as tabs
+  const split=SPLITS[S.gym.splitId];
+  tabs.innerHTML='';
+  split.schedule.forEach((sess,i)=>{
+    const gymDayForSess=S.gym.days[i % S.gym.days.length]||'';
+    const isCurrent=i===session.sessionIdx;
+    const chip=document.createElement('button');
+    chip.className='chip'+(isCurrent?' active':'');
+    chip.textContent=(i+1)+'. '+sess.label.split('(')[0].trim();
+    chip.onclick=()=>renderGymSession(i);
+    tabs.appendChild(chip);
+  });
+
+  renderGymSession(session.sessionIdx);
+}
+
+function renderGymSession(idx){
+  const split=SPLITS[S.gym.splitId]; if(!split) return;
+  const sess=split.schedule[idx]; if(!sess) return;
+  const list=document.getElementById('gym-ex-list');
+  list.innerHTML=sess.exIds.map(id=>mkExCard(id,{session:sess.label})).join('');
+}
+
+/* ════════════════════════════════
+   REHAB PAGE
+════════════════════════════════ */
+function renderRehab(){
+  const content=document.getElementById('rehab-content');
+  if(!S.rehab.programId){
+    content.innerHTML=`<div class="empty"><p>لم تختار برنامج تأهيل بعد<br>اذهب للإعدادات لاختيار برنامجك</p><button class="btn btn-acc" style="margin-top:16px" onclick="reOnboard(3)">اختار برنامج</button></div>`;
+    document.getElementById('rehab-prog-name').textContent='لا يوجد برنامج';
+    return;
+  }
+  const prog=REHAB_PROGRAMS[S.rehab.programId];
+  document.getElementById('rehab-prog-name').textContent=prog.nameAr;
+  let html='';
+
+  // Program overview card
+  html+=`<div class="card card-p" style="margin:12px 16px 10px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <div style="font-size:32px">${prog.icon}</div>
+      <div><div style="font-size:16px;font-weight:700">${prog.nameAr}</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:2px">${prog.duration} · ${prog.freq}</div></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1;background:var(--bg3);border-radius:var(--rsm);padding:10px;text-align:center">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;color:var(--acc)">${S.rehab.currentPhase}</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:2px">المرحلة الحالية</div>
+      </div>
+      <div style="flex:1;background:var(--bg3);border-radius:var(--rsm);padding:10px;text-align:center">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;color:var(--acc3)">${prog.phases.length}</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:2px">المراحل الكلية</div>
+      </div>
+      <div style="flex:1;background:var(--bg3);border-radius:var(--rsm);padding:10px;text-align:center">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:var(--acc2)">${prog.target}</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:2px">الهدف</div>
+      </div>
+    </div>
+  </div>`;
+
+  // Tips
+  if(prog.tips&&prog.tips.length){
+    html+=`<div class="alert alert-warn" style="margin-bottom:10px">
+      <strong>💡 نصائح مهمة:</strong><ul style="margin-top:6px;padding-right:16px">${prog.tips.map(t=>`<li style="margin-bottom:4px">${t}</li>`).join('')}</ul>
+    </div>`;
+  }
+
+  // Phases
+  prog.phases.forEach(ph=>{
+    const isCurrent=ph.phase===S.rehab.currentPhase;
+    const allExs=[...(ph.morning||[]),...(ph.evening||[])];
+    const doneC=allExs.filter(id=>isDone(id)).length;
+    html+=`<div class="phase-card" style="border-color:${isCurrent?'var(--acc)':'var(--border2)'}">
+      <div class="phase-head">
+        <div class="phase-num">${ph.phase}</div>
+        <div class="phase-title">${ph.name} ${isCurrent?'<span class="badge b-warn">الحالية</span>':''}</div>
+        <div class="phase-weeks">أسبوع ${ph.weeks}</div>
+      </div>
+      ${isCurrent?`<div class="prog-bar"><div class="prog-fill" style="width:${allExs.length?Math.round(doneC/allExs.length*100):0}%;background:var(--acc3)"></div></div>`:''}
+      ${ph.morning?.length?`<div style="padding:8px 14px 2px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">🌅 الصباح</div>${ph.morning.map(id=>isCurrent?mkExCard(id):mkSimpleRow(id)).join('')}`:''}
+      ${ph.evening?.length?`<div style="padding:8px 14px 2px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">🌙 المساء</div>${ph.evening.map(id=>isCurrent?mkExCard(id):mkSimpleRow(id)).join('')}`:''}
+      ${ph.note?`<div style="padding:10px 14px;font-size:12px;color:var(--acc3);border-top:.5px solid var(--border)">💡 ${ph.note}</div>`:''}
+    </div>`;
+  });
+
+  content.innerHTML=html;
+}
+
+function mkSimpleRow(exId){
+  const ex=EX[exId]; if(!ex) return '';
+  return `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:.5px solid var(--border)">
+    <div class="ex-thumb" style="width:36px;height:36px;opacity:.5">${getSvg(exId)}</div>
+    <div class="ex-info"><div class="ex-name" style="color:var(--text2)">${ex.name}</div><div class="ex-meta">${ex.sets}</div></div>
+  </div>`;
+}
+
+/* ════════════════════════════════
+   CORE PAGE
+════════════════════════════════ */
+function renderCore(){
+  const content=document.getElementById('core-content');
+  let html='';
+
+  // Core section
+  if(S.core.programId){
+    const prog=CORE_PROGRAMS[S.core.programId];
+    const doneC=prog.exIds.filter(id=>isDone(id)).length;
+    const pct=Math.round(doneC/prog.exIds.length*100);
+    html+=`<div style="padding:12px 16px 6px"><div class="stitle">${prog.icon} ${prog.name}</div></div>
+      <div class="alert alert-info" style="margin-bottom:6px">${prog.sets} · ${prog.duration}</div>
+      <div class="card" style="margin:0 16px 16px">
+        <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:var(--acc4)"></div></div>
+        ${prog.exIds.map(id=>mkExCard(id)).join('')}
+      </div>`;
+  } else {
+    html+=`<div class="empty" style="padding:24px 24px 12px"><p>لم تختار برنامج Core</p><button class="btn btn-acc" style="margin-top:12px" onclick="reOnboard(4)">اختار برنامج</button></div>`;
+  }
+
+  // Cardio section
+  html+=`<div style="padding:12px 16px 6px"><div class="stitle">🏃 الكارديو</div></div>`;
+  if(S.cardio.type){
+    const opt=CARDIO_OPTIONS.find(c=>c.id===S.cardio.type);
+    html+=`<div class="card card-p" style="margin:0 16px 10px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="font-size:36px">${opt?.icon||'🏃'}</div>
+        <div style="flex:1"><div style="font-size:16px;font-weight:700">${opt?.name||S.cardio.type}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:3px">${S.cardio.durationMin} دقيقة ${opt?.note?'· '+opt.note:''}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">أيام: ${S.cardio.days.join('، ')||'مرن'}</div></div>
+        <button class="btn btn-sm${isDone('cardio_'+S.cardio.type)?' btn-acc':''}" onclick="doToggle('cardio_${S.cardio.type}')">${isDone('cardio_'+S.cardio.type)?'✓ تم':'سجّل'}</button>
+      </div>
+    </div>`;
+  } else {
+    html+=`<div class="alert alert-info" style="margin-bottom:10px">لم تختار كارديو — <a href="#" onclick="reOnboard(4)" style="color:var(--acc3);font-weight:700">أضف كارديو</a></div>`;
+  }
+
+  content.innerHTML=html;
+}
+
+/* ════════════════════════════════
+   REPORTS PAGE
+════════════════════════════════ */
+function renderReports(){
+  updateStreak();
+  document.getElementById('r-streak').textContent=S.streak||0;
+  document.getElementById('r-streak-sub').textContent=(S.streak||0)>2?'رائع — استمر!':(S.streak||0)>0?'بداية كويسة!':'ابدأ النهارده!';
+
+  // Bar chart
+  const sn=WEEK_SHORT, now=new Date(), barData=[];
+  for(let i=6;i>=0;i--){ const d=new Date(now); d.setDate(d.getDate()-i); const ds=d.toISOString().split('T')[0]; barData.push({val:(S.history[ds]||{}).total||0, label:sn[d.getDay()]}); }
+  const chart=document.getElementById('week-chart'); chart.innerHTML='';
+  const mv=Math.max(...barData.map(d=>d.val),1);
+  barData.forEach(d=>{
+    const pct=Math.round(d.val/mv*100);
+    const col=document.createElement('div'); col.className='bar-col';
+    col.innerHTML=`<div class="bar-fill" style="height:${Math.max(pct,3)}%;background:${d.val>0?'var(--acc)':'var(--bg4)'}"></div><div class="bar-lbl">${d.label}</div>`;
+    chart.appendChild(col);
+  });
+
+  // Weight canvas
+  setTimeout(renderWeightCanvas,50);
+
+  // Muscle chart
+  const mc=document.getElementById('muscle-chart');
+  const mCounts={};
+  const days=last7Days();
+  [...getTodayGymExs(),...getTodayRehabExs(),...getTodayCoreExs()].forEach(()=>{});
+  // aggregate from all time this week
+  const allExIds=Object.keys(EX);
+  days.forEach(ds=>{
+    allExIds.forEach(id=>{ if(S.done[ds+'_'+id]&&EX[id]?.muscle) mCounts[EX[id].muscle]=(mCounts[EX[id].muscle]||0)+1; });
+  });
+  const mSorted=Object.entries(mCounts).sort((a,b)=>b[1]-a[1]);
+  const CLR=['var(--acc3)','var(--acc)','var(--acc2)','var(--acc4)'];
+  mc.innerHTML=!mSorted.length?'<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px">لا توجد بيانات هذا الأسبوع</div>':
+    mSorted.slice(0,6).map(([m,cnt],i)=>`<div class="muscle-row"><div class="muscle-name">${m}</div><div class="muscle-track"><div class="muscle-fill" style="width:${Math.round(cnt/mSorted[0][1]*100)}%;background:${CLR[i%CLR.length]}"></div></div><div class="muscle-cnt">${cnt}</div></div>`).join('');
+
+  // Perf log
+  const pl=document.getElementById('perf-log');
+  const logs=getAllPerfLogs().slice(0,12);
+  pl.innerHTML=!logs.length?'<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px">اضغط 📝 لتسجيل الأداء</div>':
+    logs.map(l=>`<div class="log-entry"><div><div class="log-name">${l.exName}</div><div class="log-date">${fmtDate(l.date)}${l.note?' · '+l.note:''}</div></div><div style="text-align:left"><div class="log-val">${l.wt?l.wt+'كج':'—'}</div><div class="log-reps">${l.reps?l.reps+' تكرار':''}</div></div></div>`).join('');
+
+  // PR History (A-05)
+  renderPRHistory();
+  // Streak Calendar (B-05)
+  renderStreakCalendar();
+  // Volume Chart (D-01)
+  renderVolumeChart();
+  // Exercise picker
+  renderExPicker();
+  // Stats overview
+  renderStatsOverview();
+}
+
+/* ── PR History ── A-05 */
+function renderPRHistory(){
+  const el=document.getElementById('pr-history-list'); if(!el) return;
+  if(typeof PRTracker==='undefined'){el.innerHTML=''; return;}
+  const prs=PRTracker.getAllPRs().slice(0,10);
+  if(!prs.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px">سجّل أداءك في التمارين لتظهر الأرقام القياسية</div>';
+    return;
+  }
+  el.innerHTML=prs.map(p=>`
+    <div class="log-entry">
+      <div><div class="log-name">🏆 ${p.exName}</div><div class="log-date">${fmtDate(p.date)}</div></div>
+      <div style="text-align:left">
+        <div class="log-val" style="color:var(--acc2)">${p.wt}كج × ${p.reps}</div>
+        <div class="log-reps" style="color:var(--acc3)">1RM: ${p.est1RM}كج</div>
+      </div>
+    </div>`).join('');
+}
+
+/* ── Streak Calendar (GitHub style) ── B-05 */
+function renderStreakCalendar(){
+  const el=document.getElementById('streak-calendar'); if(!el) return;
+  const now=new Date();
+  // Build 28-day grid (4 rows × 7 cols)
+  const days=[];
+  for(let i=27;i>=0;i--){
+    const d=new Date(now); d.setDate(d.getDate()-i);
+    const ds=d.toISOString().split('T')[0];
+    const h=S.history[ds]||{};
+    const level=h.total>0?(h.gym>0&&h.rehab>0?3:h.total>3?2:1):0;
+    days.push({ds, d, level, total:h.total||0});
+  }
+  const sn=WEEK_SHORT;
+  // Header: day names
+  let html=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px">
+    ${sn.map(d=>`<div style="font-size:9px;color:var(--text3);text-align:center">${d}</div>`).join('')}
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">`;
+  // Fill empty cells at start (align to correct weekday)
+  const firstDay=days[0].d.getDay(); // 0=Sun
+  for(let i=0;i<firstDay;i++) html+=`<div></div>`;
+  days.forEach(({d,level,total,ds})=>{
+    const isToday=ds===today();
+    const colors=['var(--bg4)','rgba(200,255,0,.25)','rgba(200,255,0,.55)','var(--acc)'];
+    const textColor=level===3?'var(--bg)':level>0?'var(--acc)':'var(--text3)';
+    html+=`<div title="${fmtDate(ds)}: ${total} تمارين" style="
+      aspect-ratio:1;border-radius:4px;background:${colors[level]};
+      display:flex;align-items:center;justify-content:center;
+      font-size:10px;font-weight:700;color:${textColor};
+      border:${isToday?'1.5px solid var(--acc)':'none'};
+      cursor:default;transition:transform .1s" 
+      onmouseover="this.style.transform='scale(1.2)'" 
+      onmouseout="this.style.transform='scale(1)'"
+    >${d.getDate()}</div>`;
+  });
+  html+='</div>';
+  // Legend
+  html+=`<div style="display:flex;align-items:center;gap:6px;margin-top:10px;justify-content:flex-end">
+    <span style="font-size:10px;color:var(--text3)">أقل</span>
+    ${['var(--bg4)','rgba(200,255,0,.25)','rgba(200,255,0,.55)','var(--acc)'].map(c=>
+      `<div style="width:12px;height:12px;border-radius:3px;background:${c}"></div>`
+    ).join('')}
+    <span style="font-size:10px;color:var(--text3)">أكثر</span>
+  </div>`;
+  el.innerHTML=html;
+}
+
+/* ── Volume Chart ── D-01 */
+function renderVolumeChart(){
+  const el=document.getElementById('volume-chart'); if(!el) return;
+  if(typeof VolumeTracker==='undefined'){el.innerHTML=''; return;}
+  const vol=VolumeTracker.getWeeklyVolume();
+  const cons=VolumeTracker.getConsistency();
+  const sorted=Object.entries(vol).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  if(!sorted.length){
+    el.innerHTML=`<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px">لا توجد بيانات حجم هذا الأسبوع</div>`;
+    return;
+  }
+  const maxV=sorted[0][1];
+  const CLR=['var(--acc2)','var(--acc)','var(--acc3)','var(--acc4)','#fff','var(--acc5)'];
+  el.innerHTML=sorted.map(([m,v],i)=>`
+    <div class="muscle-row">
+      <div class="muscle-name">${m}</div>
+      <div class="muscle-track"><div class="muscle-fill" style="width:${Math.round(v/maxV*100)}%;background:${CLR[i%CLR.length]}"></div></div>
+      <div class="muscle-cnt">${v>1000?(v/1000).toFixed(1)+'ط':v+'كج'}</div>
+    </div>`).join('')+
+    `<div style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:12px;color:var(--text2)">الانتظام (28 يوم)</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;color:${cons>=70?'var(--acc)':cons>=40?'var(--acc3)':'var(--acc2)'}">${cons}%</div>
+    </div>`;
+}
+
+/* ── Exercise Picker + Progression Chart ── A-06 */
+function renderExPicker(){
+  const sel=document.getElementById('prog-ex-picker'); if(!sel) return;
+  const exIds=Object.keys(S.perfLog||{}).filter(id=>S.perfLog[id]?.length>1);
+  const current=sel.value;
+  sel.innerHTML='<option value="">اختار تمرين...</option>'+
+    exIds.map(id=>`<option value="${id}" ${id===current?'selected':''}>${EX[id]?.name||id}</option>`).join('');
+  if(current) renderExProgression();
+}
+
+function renderExProgression(){
+  const sel=document.getElementById('prog-ex-picker'); if(!sel) return;
+  const exId=sel.value;
+  if(!exId||typeof renderProgressionChart==='undefined') return;
+  renderProgressionChart('progression-canvas', exId);
+}
+
+/* ── Stats Overview ── */
+function renderStatsOverview(){
+  const el=document.getElementById('stats-overview'); if(!el) return;
+  const totalSessions=Object.keys(S.history||{}).filter(ds=>(S.history[ds]?.total||0)>0).length;
+  const totalExDone=Object.keys(S.done||{}).filter(k=>S.done[k]).length;
+  const totalWeight=S.weightLog?.length>1?
+    (S.weightLog[S.weightLog.length-1].v - S.weightLog[0].v).toFixed(1) : null;
+  const gymDays=Object.keys(S.history||{}).filter(ds=>(S.history[ds]?.gym||0)>0).length;
+  const stats=[
+    {label:'إجمالي الجلسات', val:totalSessions, color:'var(--acc)', suffix:'يوم'},
+    {label:'تمارين مكتملة', val:totalExDone, color:'var(--acc3)', suffix:'تمرين'},
+    {label:'أيام الجيم', val:gymDays, color:'var(--acc2)', suffix:'يوم'},
+    {label:'تغيير الوزن', val:totalWeight!==null?(totalWeight>0?'+':'')+totalWeight:'—', color:'var(--acc4)', suffix:totalWeight!==null?'كج':''},
+  ];
+  el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    ${stats.map(s=>`<div style="background:var(--bg3);border-radius:var(--rsm);padding:12px;text-align:center">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;color:${s.color};line-height:1">${s.val}</div>
+      <div style="font-size:10px;color:var(--text2);margin-top:3px">${s.label}</div>
+      ${s.suffix?`<div style="font-size:9px;color:var(--text3)">${s.suffix}</div>`:''}
+    </div>`).join('')}
+  </div>`;
+}
+
+/* ════════════════════════════════
+   SETTINGS PAGE
+════════════════════════════════ */
+function renderSettings(){
+  document.getElementById('s-name').value=S.profile.name||'';
+  document.getElementById('s-age').value=S.profile.age||'';
+  document.getElementById('s-wt').value=S.profile.weight||'';
+  document.getElementById('s-ht').value=S.profile.height||'';
+  const bmi=getBMI();
+  document.getElementById('s-bmi-wrap').innerHTML=bmi?`<div style="font-size:12px;color:var(--text2)">BMI: <strong style="color:var(--acc)">${bmi}</strong></div>`:'';
+  const split=SPLITS[S.gym.splitId];
+  document.getElementById('s-split-info').innerHTML=S.gym.enabled&&split?
+    `<div style="font-size:14px;font-weight:700;margin-bottom:4px">${split.name}</div>
+     <div style="font-size:12px;color:var(--text2)">أيام الجيم: ${S.gym.days.join('، ')||'—'}</div>`
+    :'<div style="font-size:13px;color:var(--text2)">لا يوجد برنامج جيم</div>';
+  const rp=REHAB_PROGRAMS[S.rehab.programId];
+  document.getElementById('s-rehab-info').innerHTML=rp?
+    `<div style="font-size:14px;font-weight:700;margin-bottom:4px">${rp.nameAr}</div>
+     <div style="font-size:12px;color:var(--text2)">المرحلة ${S.rehab.currentPhase} من ${rp.phases.length} · ${rp.duration}</div>`
+    :'<div style="font-size:13px;color:var(--text2)">لا يوجد برنامج تأهيل</div>';
+  const cp=CORE_PROGRAMS[S.core.programId];
+  document.getElementById('s-core-info').innerHTML=cp?
+    `<div style="font-size:14px;font-weight:700;margin-bottom:4px">${cp.name}</div>
+     <div style="font-size:12px;color:var(--text2)">${S.core.days.join('، ')||'أيام مرنة'}</div>`
+    :'<div style="font-size:13px;color:var(--text2)">لا يوجد برنامج Core</div>';
+  document.getElementById('s-theme-lbl').textContent=S.theme==='dark'?'وضع مظلم':'وضع مضيء';
+  const notifLbl=document.getElementById('s-notif-lbl');
+  if(notifLbl){
+    if(Notification.permission==='granted'&&S.notifTime)
+      notifLbl.textContent=`يومياً ${S.notifTime.hour}:${String(S.notifTime.minute).padStart(2,'0')} ✅`;
+    else notifLbl.textContent='اضغط للإعداد';
+  }
+}
+
+function saveProfile(){
+  S.profile.name=document.getElementById('s-name').value.trim();
+  S.profile.age=parseInt(document.getElementById('s-age').value)||null;
+  S.profile.weight=parseFloat(document.getElementById('s-wt').value)||null;
+  S.profile.height=parseFloat(document.getElementById('s-ht').value)||null;
+  save(); toast('✓ تم الحفظ!'); renderSettings();
+}
+
+function doAdvancePhase(){
+  if(advanceRehabPhase()){ toast('✓ انتقلت للمرحلة '+S.rehab.currentPhase+'!'); renderSettings(); renderRehab(); }
+  else toast('أنت في آخر مرحلة!','err');
+}
+
+/* ════════════════════════════════
+   ACTIONS
+════════════════════════════════ */
+function doToggle(exId){
+  const was=toggleDone(exId);
+  toast(was?'✓ تم!':'تم الإلغاء');
+  // Update row in current view
+  const row=document.getElementById('exrow-'+exId);
+  const chk=document.getElementById('exchk-'+exId);
+  const card=document.getElementById('wcard-'+exId);
+  const btn=document.getElementById('wcbtn-'+exId);
+  if(row){ row.className='ex-row'+(was?' done':''); }
+  if(chk){ chk.className='ex-chk'+(was?' done':''); chk.innerHTML=was?mkCheckSvg():''; }
+  if(card) card.className='wcard'+(was?' done':'');
+  if(btn){ btn.className='btn btn-sm'+(was?' btn-acc':''); btn.textContent=was?'✓ تم':'سجّل'; }
+  // update stat
+  document.getElementById('s-done').textContent=totalTodayDone()+'/'+totalTodayAll();
+}
+
+function doLogW(){
+  const v=parseFloat(document.getElementById('w-input').value);
+  if(!v||v<20||v>350){toast('أدخل وزن صحيح','err');return;}
+  logWeight(v); document.getElementById('w-input').value='';
+  toast('✓ وزن مسجّل!'); renderReports();
+  document.getElementById('s-weight').textContent=v.toFixed(1);
+}
+
+let _logExId=null;
+function openLogModal(id,name,histOnly=false){
+  _logExId=id;
+  document.getElementById('log-title').textContent=histOnly?'سجل الأداء':('📝 '+(name||''));
+  ['log-wt','log-reps','log-note'].forEach(i=>document.getElementById(i).value='');
+  const hist=id?(S.perfLog[id]||[]):[];
+  const allLogs=histOnly?getAllPerfLogs().slice(0,20):hist.slice(-5).reverse();
+  document.getElementById('log-hist').innerHTML=allLogs.length?
+    `<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:12px 0 8px">السجل السابق</div>`+
+    allLogs.map(l=>`<div class="log-entry"><div><div class="log-name">${histOnly?(EX[l.exId]?.name||l.exId):fmtDate(l.date)}</div><div class="log-date">${histOnly?fmtDate(l.date):''}${l.note?' '+l.note:''}</div></div><div style="text-align:left"><div class="log-val">${l.wt?l.wt+'كج':'—'}</div><div class="log-reps">${l.reps?l.reps+' تكرار':''}</div></div></div>`).join('')
+    :'<div style="font-size:12px;color:var(--text3);padding:10px 0">لا يوجد سجل سابق</div>';
+  openOverlay('log-overlay');
+}
+function doSaveLog(){
+  if(!_logExId){closeOverlay('log-overlay');return;}
+  const wt=parseFloat(document.getElementById('log-wt').value)||0;
+  const reps=parseInt(document.getElementById('log-reps').value)||0;
+  const note=document.getElementById('log-note').value.trim();
+  if(!wt&&!reps){toast('أدخل وزن أو تكرار','err');return;}
+  // Check PR before saving
+  const isPR = wt && reps && (typeof PRTracker!=='undefined') && PRTracker.check(_logExId, wt, reps);
+  logPerf(_logExId,{wt,reps,note});
+  closeOverlay('log-overlay');
+  if(isPR){
+    const exName = EX[_logExId]?.name || _logExId;
+    const est1RM = PRTracker.est1RM(wt,reps);
+    setTimeout(()=>showPRCelebration(exName,wt,reps,est1RM), 300);
+    toast('🏆 رقم قياسي جديد!');
+  } else {
+    toast('✓ أداء مسجّل!');
+  }
+  const card=document.getElementById('wcard-'+_logExId);
+  if(card) renderGym();
+}
+
+/* ════════════════════════════════
+   ONBOARDING
+════════════════════════════════ */
+let _obStep=1, _obTotalSteps=5, _obGymEnabled=true, _obSelSplit=null, _obGymDays=[], _obRehabId=null, _obRehabDays=[], _obCoreId=null, _obCoreDays=[], _obCardioId=null, _obCardioDays=[];
+
+function initOnboarding(){
+  // Fill splits
+  document.getElementById('split-list').innerHTML=Object.entries(SPLITS).map(([id,sp])=>`
+    <div class="split-card" id="sp-${id}" onclick="selSplit('${id}')">
+      <div class="split-days-badge">${sp.days||'?'}</div>
+      <div class="split-info"><div class="split-name">${sp.name}</div><div class="split-desc">${sp.desc}</div></div>
+    </div>`).join('');
+
+  // Fill rehab programs
+  document.getElementById('rehab-list').innerHTML=Object.entries(REHAB_PROGRAMS).map(([id,p])=>`
+    <div class="prog-card" id="rp-${id}" onclick="selRehab('${id}')">
+      <div class="prog-card-head">
+        <div class="prog-icon">${p.icon}</div>
+        <div class="prog-info"><div class="prog-name">${p.nameAr}</div><div class="prog-desc">${p.desc}</div></div>
+      </div>
+      <div class="prog-tags"><span class="prog-tag">${p.target}</span><span class="prog-tag">${p.duration}</span><span class="prog-tag">${p.freq}</span></div>
+    </div>`).join('')+
+    `<div class="prog-card" id="rp-none" onclick="selRehab(null)"><div class="prog-card-head"><div class="prog-icon">⏭️</div><div class="prog-info"><div class="prog-name">تخطي</div><div class="prog-desc">لا أحتاج تأهيل حالياً</div></div></div></div>`;
+
+  // Fill core programs
+  document.getElementById('core-list').innerHTML=Object.entries(CORE_PROGRAMS).map(([id,p])=>`
+    <div class="goal-card" id="cp-${id}" onclick="selCore('${id}')">
+      <div class="goal-icon">${p.icon}</div>
+      <div class="goal-info"><div class="goal-name">${p.name}</div><div class="goal-desc">${p.desc}</div></div>
+    </div>`).join('')+
+    `<div class="goal-card" id="cp-none" onclick="selCore(null)"><div class="goal-icon">⏭️</div><div class="goal-info"><div class="goal-name">تخطي</div><div class="goal-desc">بدون Core منظم</div></div></div>`;
+
+  // Fill cardio
+  document.getElementById('cardio-list').innerHTML=CARDIO_OPTIONS.map(c=>`
+    <div class="goal-card" id="ca-${c.id}" onclick="selCardio('${c.id}')" style="flex:calc(50% - 4px);margin:0">
+      <div class="goal-icon">${c.icon}</div>
+      <div class="goal-info"><div class="goal-name">${c.name}</div></div>
+    </div>`).join('')+
+    `<div class="goal-card" id="ca-none" onclick="selCardio(null)" style="flex:calc(50% - 4px);margin:0"><div class="goal-icon">⏭️</div><div class="goal-info"><div class="goal-name">بدون كارديو</div></div></div>`;
+
+  mkDayChips('gym-day-chips',_obGymDays,(d,sel)=>{ if(sel) _obGymDays.push(d); else _obGymDays=_obGymDays.filter(x=>x!==d); });
+  mkDayChips('rehab-day-chips',_obRehabDays,(d,sel)=>{ if(sel) _obRehabDays.push(d); else _obRehabDays=_obRehabDays.filter(x=>x!==d); });
+  mkDayChips('core-day-chips',_obCoreDays,(d,sel)=>{ if(sel) _obCoreDays.push(d); else _obCoreDays=_obCoreDays.filter(x=>x!==d); });
+  mkDayChips('cardio-day-chips',_obCardioDays,(d,sel)=>{ if(sel) _obCardioDays.push(d); else _obCardioDays=_obCardioDays.filter(x=>x!==d); });
+  obUpdateUI();
+}
+
+function mkDayChips(containerId, selArr, onChange){
+  const c=document.getElementById(containerId); if(!c) return;
+  c.innerHTML=WEEK_DAYS.map(d=>`<span class="day-chip${selArr.includes(d)?' sel':''}" data-day="${d}" onclick="toggleDayChip(this,'${containerId}')">${d}</span>`).join('');
+  c._onChange=onChange;
+}
+
+function toggleDayChip(el, containerId){
+  el.classList.toggle('sel');
+  const day=el.dataset.day, isSel=el.classList.contains('sel');
+  const c=document.getElementById(containerId);
+  if(c._onChange) c._onChange(day,isSel);
+}
+
+function setGymEnabled(val){
+  _obGymEnabled=val;
+  document.getElementById('gym-yes').className='goal-card'+(val?' sel':'');
+  document.getElementById('gym-no').className='goal-card'+(!val?' sel':'');
+  document.getElementById('gym-config').style.display=val?'block':'none';
+}
+
+function selSplit(id){
+  _obSelSplit=id;
+  document.querySelectorAll('.split-card').forEach(c=>c.classList.remove('sel'));
+  document.getElementById('sp-'+id)?.classList.add('sel');
+  const sp=SPLITS[id];
+  document.getElementById('gym-days-wrap').style.display=sp?.days>0?'block':'none';
+}
+
+function selRehab(id){
+  _obRehabId=id;
+  document.querySelectorAll('[id^="rp-"]').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('rp-'+(id||'none'))?.classList.add('selected');
+  document.getElementById('rehab-days-wrap').style.display=id?'block':'none';
+}
+
+function selCore(id){
+  _obCoreId=id;
+  document.querySelectorAll('[id^="cp-"]').forEach(c=>c.classList.remove('sel'));
+  document.getElementById('cp-'+(id||'none'))?.classList.add('sel');
+  document.getElementById('core-days-wrap').style.display=id?'block':'none';
+}
+
+function selCardio(id){
+  _obCardioId=id;
+  document.querySelectorAll('[id^="ca-"]').forEach(c=>c.classList.remove('sel'));
+  document.getElementById('ca-'+(id||'none'))?.classList.add('sel');
+  document.getElementById('cardio-days-wrap').style.display=id?'block':'none';
+}
+
+function obUpdateUI(){
+  // Update step dots
+  document.querySelectorAll('.ob-step-dot').forEach(d=>{
+    const n=parseInt(d.dataset.sdot);
+    d.className='ob-step-dot'+(n<_obStep?' done':n===_obStep?' active':'');
+  });
+  const pct=Math.round((_obStep-1)/(_obTotalSteps-1)*100);
+  document.getElementById('ob-prog').style.width=pct+'%';
+  document.querySelectorAll('.onboard-step').forEach(s=>s.classList.remove('active'));
+  document.querySelector(`.onboard-step[data-step="${_obStep}"]`)?.classList.add('active');
+  document.getElementById('ob-back').style.display=_obStep>1?'block':'none';
+  document.getElementById('ob-next').textContent=_obStep===_obTotalSteps?'🚀 ابدأ!':'التالي ←';
+}
+
+function obNext(){
+  if(_obStep===_obTotalSteps){ finishOnboarding(); return; }
+  if(_obStep===4) buildSummary();
+  _obStep++; obUpdateUI();
+}
+
+function obBack(){
+  if(_obStep>1){ _obStep--; obUpdateUI(); }
+}
+
+function reOnboard(step){
+  _obStep=step;
+  document.getElementById('onboarding').style.display='flex';
+  document.getElementById('onboarding').style.flexDirection='column';
+  document.getElementById('main-app').style.display='none';
+  obUpdateUI();
+}
+
+function buildSummary(){
+  const name=document.getElementById('ob-name').value.trim()||'بطل';
+  document.getElementById('ob-done-title').textContent='جاهز يا '+name+'! 🎯';
+  const sp=SPLITS[_obSelSplit];
+  const rp=REHAB_PROGRAMS[_obRehabId];
+  const cp=CORE_PROGRAMS[_obCoreId];
+  const cd=CARDIO_OPTIONS.find(c=>c.id===_obCardioId);
+  document.getElementById('ob-summary').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${sp?`<div class="card card-p" style="display:flex;align-items:center;gap:12px"><span style="font-size:22px">🏋️</span><div><div style="font-weight:700">${sp.name}</div><div style="font-size:12px;color:var(--text2)">${_obGymDays.join('، ')||'أيام غير محددة'}</div></div></div>`:''}
+      ${rp?`<div class="card card-p" style="display:flex;align-items:center;gap:12px"><span style="font-size:22px">${rp.icon}</span><div><div style="font-weight:700">${rp.nameAr}</div><div style="font-size:12px;color:var(--text2)">${rp.duration}</div></div></div>`:''}
+      ${cp?`<div class="card card-p" style="display:flex;align-items:center;gap:12px"><span style="font-size:22px">⚡</span><div><div style="font-weight:700">${cp.name}</div><div style="font-size:12px;color:var(--text2)">${cp.sets}</div></div></div>`:''}
+      ${cd?`<div class="card card-p" style="display:flex;align-items:center;gap:12px"><span style="font-size:22px">${cd.icon}</span><div><div style="font-weight:700">${cd.name}</div><div style="font-size:12px;color:var(--text2)">${_obCardioDays.join('، ')||'أيام مرنة'}</div></div></div>`:''}
+    </div>`;
+}
+
+function finishOnboarding(){
+  // Save all settings to state
+  S.profile.name=document.getElementById('ob-name').value.trim();
+  S.profile.age=parseInt(document.getElementById('ob-age').value)||null;
+  S.profile.weight=parseFloat(document.getElementById('ob-weight').value)||null;
+  S.profile.height=parseFloat(document.getElementById('ob-height').value)||null;
+  S.profile.goal=document.getElementById('ob-goal').value;
+  S.gym.enabled=_obGymEnabled;
+  S.gym.splitId=_obSelSplit;
+  S.gym.days=_obGymDays;
+  S.rehab.programId=_obRehabId;
+  S.rehab.days=_obRehabDays;
+  S.rehab.currentPhase=1;
+  S.rehab.startDate=today();
+  S.core.programId=_obCoreId;
+  S.core.days=_obCoreDays;
+  S.cardio.type=_obCardioId;
+  S.cardio.days=_obCardioDays;
+  S.onboarded=true;
+  save();
+  launchApp();
+}
+
+/* ════════════════════════════════
+   APP LAUNCH
+════════════════════════════════ */
+function launchApp(){
+  document.getElementById('onboarding').style.display='none';
+  document.getElementById('main-app').style.display='flex';
+  applyTheme();
+  // hide gym tab if not enabled
+  document.getElementById('nav-gym').style.display=S.gym.enabled?'':'none';
+  renderToday();
+}
+
+/* ════════════════════════════════
+   INIT
+════════════════════════════════ */
+applyTheme();
+if(S.onboarded){
+  launchApp();
+} else {
+  document.getElementById('onboarding').style.display='flex';
+  initOnboarding();
+}
+
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+
+<!-- ══ TIMER MODAL ══ -->
+<div class="overlay" id="timer-overlay" onclick="if(event.target===this){RestTimer.stop();closeOverlay('timer-overlay')}">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="timer-ex-name" style="text-align:center;font-size:16px;color:var(--text2);margin-bottom:20px">راحة بين السيتات</div>
+
+    <!-- Circle Timer -->
+    <div style="display:flex;justify-content:center;margin-bottom:20px">
+      <div style="position:relative;width:140px;height:140px">
+        <svg width="140" height="140" style="transform:rotate(-90deg)">
+          <circle cx="70" cy="70" r="54" fill="none" stroke="var(--bg4)" stroke-width="8"/>
+          <circle id="timer-circle-fill" cx="70" cy="70" r="54" fill="none" stroke="var(--acc)" stroke-width="8"
+            stroke-linecap="round" stroke-dasharray="339.3" stroke-dashoffset="0"
+            style="transition:stroke-dashoffset .9s linear,stroke .3s"/>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div id="timer-display" style="font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;line-height:1;color:var(--text)">01:30</div>
+          <div id="timer-status" style="font-size:11px;color:var(--text2);margin-top:4px">جاهز</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Presets -->
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:20px">
+      <button class="timer-preset btn btn-sm" data-secs="30"  onclick="setTimerDuration(30)">30ث</button>
+      <button class="timer-preset btn btn-sm" data-secs="60"  onclick="setTimerDuration(60)">1د</button>
+      <button class="timer-preset btn btn-sm btn-acc active" data-secs="90"  onclick="setTimerDuration(90)">1:30</button>
+      <button class="timer-preset btn btn-sm" data-secs="120" onclick="setTimerDuration(120)">2د</button>
+      <button class="timer-preset btn btn-sm" data-secs="180" onclick="setTimerDuration(180)">3د</button>
+    </div>
+
+    <div class="modal-btns">
+      <button class="mb-s" onclick="RestTimer.stop();closeOverlay('timer-overlay')">إغلاق</button>
+      <button class="mb-p" id="timer-start-btn" onclick="startTimer()">ابدأ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PR TOAST ══ -->
+<div id="pr-toast" style="
+  position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 80px);left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:linear-gradient(135deg,var(--bg2),var(--bg3));
+  border:.5px solid rgba(200,255,0,.4);
+  border-radius:var(--r);padding:14px 20px;text-align:center;
+  z-index:250;pointer-events:none;opacity:0;
+  transition:transform .4s cubic-bezier(.32,.72,0,1),opacity .4s;
+  min-width:220px;box-shadow:0 8px 32px rgba(0,0,0,.4)
+"></div>
+<style>
+#pr-toast.show { transform:translateX(-50%) translateY(0) !important; opacity:1 !important; }
+</style>
+
+
+<!-- ══ OFFLINE BAR ══ -->
+<div class="offline-bar" id="offline-bar">📡 لا يوجد إنترنت — التطبيق يعمل offline</div>
+
+<!-- ══ PWA INSTALL BANNER ══ -->
+<div class="install-banner hidden" id="install-banner">
+  <div style="font-size:32px">💪</div>
+  <div style="flex:1">
+    <div style="font-size:14px;font-weight:700;margin-bottom:2px">ثبّت GymPro</div>
+    <div style="font-size:11px;color:var(--text2)">أضفه لهوم سكرين للوصول السريع</div>
+  </div>
+  <div style="display:flex;gap:6px">
+    <button class="btn btn-sm btn-acc" id="install-btn">تثبيت</button>
+    <button class="btn btn-sm" onclick="document.getElementById('install-banner').classList.add('hidden')">لا</button>
+  </div>
+</div>
+
+<!-- ══ NOTIFICATIONS MODAL ══ -->
+<div class="overlay" id="notif-overlay" onclick="if(event.target===this)closeOverlay('notif-overlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🔔 إعدادات الإشعارات</div>
+
+    <div id="notif-permission-block">
+      <div class="alert alert-info" style="margin-bottom:14px">
+        سمح للتطبيق بالإشعارات عشان يذكّرك بوقت التمرين كل يوم
+      </div>
+      <button class="btn btn-acc" style="width:100%;justify-content:center;margin-bottom:14px" onclick="doRequestNotifPerm()">
+        السماح بالإشعارات
+      </button>
+    </div>
+
+    <div class="form-field">
+      <label class="flabel">وقت التذكير اليومي</label>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <input class="finput" id="notif-hour" type="number" min="0" max="23" placeholder="18" style="flex:1">
+        <span style="line-height:42px;font-size:16px;color:var(--text2)">:</span>
+        <input class="finput" id="notif-min" type="number" min="0" max="59" placeholder="00" style="flex:1">
+      </div>
+    </div>
+
+    <div class="form-field" style="margin-top:4px">
+      <label class="flabel">تذكير Deload</label>
+      <div class="notif-time-row">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600">تذكير أسبوع الراحة</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">كل 6 أسابيع من التمرين المنتظم</div>
+        </div>
+        <label style="position:relative;width:44px;height:24px;display:block">
+          <input type="checkbox" id="notif-deload" style="opacity:0;width:0;height:0">
+          <span id="notif-deload-toggle" onclick="toggleDeloadNotif()" style="position:absolute;inset:0;background:var(--bg4);border-radius:12px;cursor:pointer;transition:.2s">
+            <span id="notif-deload-thumb" style="position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:3px;left:3px;transition:.2s"></span>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="mb-s" onclick="closeOverlay('notif-overlay')">إلغاء</button>
+      <button class="mb-p" onclick="saveNotifSettings()">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════
+   PWA + NOTIFICATIONS + OFFLINE (C-01→C-06)
+════════════════════════════════ */
+
+// Offline detection (C-05)
+function updateOnlineStatus(){
+  document.getElementById('offline-bar').classList.toggle('show', !navigator.onLine);
+}
+window.addEventListener('online',  updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
+// PWA Install prompt (C-06)
+let _deferredInstall = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredInstall = e;
+  setTimeout(() => {
+    if(!localStorage.getItem('pwa-dismissed'))
+      document.getElementById('install-banner')?.classList.remove('hidden');
+  }, 3000);
+});
+document.getElementById('install-btn')?.addEventListener('click', async () => {
+  if(!_deferredInstall) return;
+  _deferredInstall.prompt();
+  const { outcome } = await _deferredInstall.userChoice;
+  if(outcome === 'accepted') localStorage.setItem('pwa-dismissed','1');
+  document.getElementById('install-banner').classList.add('hidden');
+  _deferredInstall = null;
+});
+window.addEventListener('appinstalled', () => {
+  document.getElementById('install-banner')?.classList.add('hidden');
+  localStorage.setItem('pwa-dismissed','1');
+});
+
+// Notification settings (C-01, C-02, C-03)
+function openNotifModal(){
+  const granted = Notification.permission === 'granted';
+  document.getElementById('notif-permission-block').style.display = granted ? 'none' : 'block';
+  const t = S.notifTime || { hour:18, minute:0 };
+  document.getElementById('notif-hour').value = t.hour;
+  document.getElementById('notif-min').value  = String(t.minute).padStart(2,'0');
+  const deloadOn = S.notifDeload || false;
+  const thumb = document.getElementById('notif-deload-thumb');
+  const track = document.getElementById('notif-deload-toggle');
+  if(thumb) thumb.style.left = deloadOn ? '23px' : '3px';
+  if(track) track.style.background = deloadOn ? 'var(--acc)' : 'var(--bg4)';
+  openOverlay('notif-overlay');
+}
+
+async function doRequestNotifPerm(){
+  if(typeof Notifs === 'undefined') return;
+  const ok = await Notifs.requestPermission();
+  if(ok){
+    document.getElementById('notif-permission-block').style.display='none';
+    toast('✅ تم السماح بالإشعارات!');
+  } else {
+    toast('لم يتم السماح — فعّل من إعدادات المتصفح', 'err');
+  }
+}
+
+function toggleDeloadNotif(){
+  S.notifDeload = !S.notifDeload;
+  const thumb = document.getElementById('notif-deload-thumb');
+  const track = document.getElementById('notif-deload-toggle');
+  if(thumb) thumb.style.left = S.notifDeload ? '23px' : '3px';
+  if(track) track.style.background = S.notifDeload ? 'var(--acc)' : 'var(--bg4)';
+}
+
+function saveNotifSettings(){
+  const h = parseInt(document.getElementById('notif-hour').value) || 18;
+  const m = parseInt(document.getElementById('notif-min').value)  || 0;
+  S.notifTime = { hour: Math.min(23,Math.max(0,h)), minute: Math.min(59,Math.max(0,m)) };
+  save();
+  if(Notification.permission === 'granted' && typeof Notifs !== 'undefined'){
+    Notifs.scheduleTodayReminder(S.notifTime.hour, S.notifTime.minute);
+  }
+  closeOverlay('notif-overlay');
+  toast('✅ تم حفظ إعدادات الإشعارات!');
+}
+
+// Check deload (C-03)
+function checkDeload(){
+  const activeDays = Object.keys(S.history||{})
+    .filter(ds => (S.history[ds]?.total||0) > 0)
+    .sort().reverse();
+  if(activeDays.length >= 35 && S.notifDeload){
+    // 5 weeks consistent = suggest deload
+    const banner = document.createElement('div');
+    banner.className = 'deload-banner';
+    banner.innerHTML = '<div class="deload-banner-icon">🌙</div><div><strong>وقت أسبوع الراحة!</strong><br>عندك أكتر من 5 أسابيع تمرين منتظم — خفّف الأوزان 40-50% هذا الأسبوع لتجنب الإرهاق.</div>';
+    const todaySects = document.getElementById('today-sections');
+    if(todaySects && !document.querySelector('.deload-banner'))
+      todaySects.prepend(banner);
+  }
+}
+
+/* ════════════════════════════════
+   PULL TO REFRESH (B-07)
+════════════════════════════════ */
+function initPullToRefresh(pageId, onRefresh){
+  const page = document.getElementById(pageId);
+  if(!page) return;
+  let startY = 0, pulling = false;
+  const indicator = document.createElement('div');
+  indicator.className = 'ptr-indicator';
+  indicator.innerHTML = '<div class="ptr-spinner"></div><span>سحب للتحديث...</span>';
+  page.style.position = 'relative';
+  page.prepend(indicator);
+
+  page.addEventListener('touchstart', e => {
+    if(page.scrollTop === 0) { startY = e.touches[0].clientY; pulling = true; }
+  }, {passive:true});
+
+  page.addEventListener('touchmove', e => {
+    if(!pulling) return;
+    const dy = e.touches[0].clientY - startY;
+    if(dy > 50) indicator.classList.add('visible');
+  }, {passive:true});
+
+  page.addEventListener('touchend', () => {
+    if(!pulling) return;
+    pulling = false;
+    if(indicator.classList.contains('visible')){
+      indicator.querySelector('span').textContent = 'جاري التحديث...';
+      setTimeout(() => {
+        onRefresh();
+        indicator.classList.remove('visible');
+        indicator.querySelector('span').textContent = 'سحب للتحديث...';
+      }, 800);
+    }
+  });
+}
+
+/* ════════════════════════════════
+   EXPORT DATA (D-04)
+════════════════════════════════ */
+function exportData(){
+  const data = {
+    exportDate: new Date().toISOString(),
+    profile: S.profile,
+    gym: S.gym,
+    rehab: { programId: S.rehab.programId, currentPhase: S.rehab.currentPhase, days: S.rehab.days },
+    core: S.core,
+    cardio: S.cardio,
+    history: S.history,
+    weightLog: S.weightLog,
+    perfLog: S.perfLog,
+    streak: S.streak,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `gympro-backup-${today()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✅ تم تصدير البيانات!');
+}
+
+/* ════════════════════════════════
+   INIT PWA FEATURES
+════════════════════════════════ */
+// Pull to refresh on Today page
+setTimeout(() => initPullToRefresh('p-today', renderToday), 500);
+
+// Schedule notification if already granted
+if(Notification.permission === 'granted' && S.notifTime && typeof Notifs !== 'undefined'){
+  Notifs.scheduleTodayReminder(S.notifTime.hour, S.notifTime.minute);
+}
+
+// Check deload
+setTimeout(checkDeload, 1000);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "GymPro — برنامجك التدريبي",
+  "short_name": "GymPro",
+  "description": "جيم، تأهيل، كور، وكارديو — كل حاجة في مكان واحد",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0d0d0d",
+  "theme_color": "#0d0d0d",
+  "orientation": "portrait-primary",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "fitness", "sports"],
+  "prefer_related_applications": false
+}
